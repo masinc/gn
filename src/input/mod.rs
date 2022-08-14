@@ -122,10 +122,3 @@ impl InputType {
         None
     }
 }
-
-// pub fn guess_by_extension(ext: impl AsRef<str>) -> Box<dyn Input> {
-//     let ext = ext.as_ref();
-//     if Json::extensions().contains(&ext) {
-//         Box::new(Json)
-//     }
-// }
