@@ -145,6 +145,7 @@ name = "gn"
 version = "0.1.1"
 dependencies = [
  "anyhow",
+ "atty",
  "clap",
  "either",
  "json5",
@@ -152,6 +153,7 @@ dependencies = [
  "serde",
  "serde_json",
  "serde_yaml",
+ "termcolor",
  "thiserror",
  "toml",
  "url",

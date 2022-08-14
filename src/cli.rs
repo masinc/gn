@@ -1,5 +1,9 @@
 use clap::Parser;
-use std::path::PathBuf;
+use std::{
+    fs,
+    io::{self, prelude::*},
+    path::PathBuf,
+};
 use url::Url;
 
 #[derive(Debug, Clone, Copy, PartialEq, Eq, clap::ValueEnum)]
@@ -17,6 +21,37 @@ impl Default for ArgInputType {
     }
 }
 
+#[derive(Debug, Clone, Copy, PartialEq, Eq, clap::ValueEnum)]
+pub enum ArgColor {
+    Auto,
+    Always,
+    Never,
+}
+
+impl Default for ArgColor {
+    fn default() -> Self {
+        ArgColor::Auto
+    }
+}
+
+impl ArgColor {
+    pub fn color_choice(&self) -> termcolor::ColorChoice {
+        use atty::Stream;
+        use termcolor::ColorChoice;
+        match self {
+            ArgColor::Auto => {
+                if atty::is(Stream::Stdout) {
+                    ColorChoice::Always
+                } else {
+                    ColorChoice::Never
+                }
+            }
+            ArgColor::Always => ColorChoice::Always,
+            ArgColor::Never => ColorChoice::Never,
+        }
+    }
+}
+
 #[derive(Debug, Clone, PartialEq, Eq)]
 pub enum Input {
     Stdin,
@@ -30,6 +65,14 @@ impl Input {
             Input::Stdin => None,
             Input::Url(u) => unimplemented!(),
             Input::Path(p) => p.extension().and_then(|s| s.to_str().map(String::from)),
+        }
+    }
+
+    pub fn read(&self) -> io::Result<Box<dyn Read>> {
+        match self {
+            Input::Stdin => Ok(Box::new(io::stdin().lock())),
+            Input::Path(s) => Ok(Box::new(fs::File::open(s)?)),
+            Input::Url(_) => todo!(),
         }
     }
 }
@@ -56,6 +99,9 @@ impl std::str::FromStr for Input {
 pub struct Cli {
     #[clap(value_enum, short, long, default_value_t)]
     pub input_type: ArgInputType,
+
+    #[clap(value_enum, short, long, default_value_t)]
+    pub color: ArgColor,
 
     #[clap(value_name = "PATH|URL|STDIN", default_value = "-")]
     pub input: Input,

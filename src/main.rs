@@ -3,48 +3,55 @@ mod input;
 
 use clap::Parser;
 use cli::{ArgInputType, Cli};
-use std::{
-    fs,
-    io::{self, prelude::*, BufReader},
-};
+use std::io::{prelude::*, BufReader};
+use termcolor::BufferWriter;
 
-fn load_input(input: &cli::Input) -> io::Result<Box<dyn Read>> {
-    dbg!(input);
-    match input {
-        cli::Input::Stdin => Ok(Box::new(io::stdin().lock())),
-        cli::Input::Path(s) => Ok(Box::new(fs::File::open(s)?)),
-        cli::Input::Url(_) => todo!(),
-    }
+pub struct GronArgs {
+    extension: Option<String>,
+    input_type: ArgInputType,
+    input: Box<dyn Read>,
+    color_choice: termcolor::ColorChoice,
 }
 
-fn gron(input_type: ArgInputType, input: cli::Input) -> anyhow::Result<()> {
-    let reader = load_input(&input);
-    let mut reader = BufReader::new(reader?);
+fn gron(args: GronArgs) -> anyhow::Result<()> {
+    let mut reader = BufReader::new(args.input);
 
     let mut s = String::new();
     reader.read_to_string(&mut s)?;
 
-    match input_type {
+    let writer = BufferWriter::stdout(args.color_choice);
+
+    match args.input_type {
         ArgInputType::Json | ArgInputType::Json5 | ArgInputType::Yaml | ArgInputType::Toml => {
-            println!("{}", input::InputType::Toml.to_gron(&s)?)
+            writeln!(writer.buffer(), "{}", input::InputType::Toml.to_gron(&s)?)?
         }
-        ArgInputType::Auto => {
-            match input
-                .extension()
-                .and_then(input::InputType::guess_by_extension)
-            {
-                Some(ext) => {
-                    println!("{}", ext.to_gron(&s)?);
-                }
-                None => println!("{}", input::InputType::guess_and_to_gron(&s).unwrap()),
+        ArgInputType::Auto => match args
+            .extension
+            .and_then(input::InputType::guess_by_extension)
+        {
+            Some(ext) => {
+                writeln!(writer.buffer(), "{}", ext.to_gron(&s)?)?;
             }
-        }
+            None => writeln!(
+                writer.buffer(),
+                "{}",
+                input::InputType::guess_and_to_gron(&s).unwrap()
+            )?,
+        },
     }
 
     Ok(())
 }
 
 fn main() -> anyhow::Result<()> {
-    let args = Cli::parse();
-    gron(args.input_type, args.input)
+    let cli = Cli::parse();
+
+    let args = GronArgs {
+        extension: cli.input.extension(),
+        input_type: cli.input_type,
+        input: cli.input.read()?,
+        color_choice: cli.color.color_choice(),
+    };
+
+    gron(args)
 }
