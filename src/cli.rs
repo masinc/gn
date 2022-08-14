@@ -53,7 +53,7 @@ impl std::str::FromStr for Input {
 
 #[derive(Parser, Debug)]
 #[clap(author, version, about, long_about = None)]
-pub struct Args {
+pub struct Cli {
     #[clap(value_enum, short, long, default_value_t)]
     pub input_type: ArgInputType,
 

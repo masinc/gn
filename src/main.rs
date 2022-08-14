@@ -2,7 +2,7 @@ mod cli;
 mod input;
 
 use clap::Parser;
-use cli::{ArgInputType, Args};
+use cli::{ArgInputType, Cli};
 use std::{
     fs,
     io::{self, prelude::*, BufReader},
@@ -45,6 +45,6 @@ fn gron(input_type: ArgInputType, input: cli::Input) -> anyhow::Result<()> {
 }
 
 fn main() -> anyhow::Result<()> {
-    let args = Args::parse();
+    let args = Cli::parse();
     gron(args.input_type, args.input)
 }
