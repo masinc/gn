@@ -11,13 +11,24 @@ pub enum ArgInputType {
     Auto,
     Json,
     Json5,
-    Yaml,
     Toml,
+    Yaml,
 }
 
 impl Default for ArgInputType {
     fn default() -> Self {
         Self::Auto
+    }
+}
+
+impl From<crate::input::InputType> for ArgInputType {
+    fn from(input_type: crate::input::InputType) -> Self {
+        match input_type {
+            crate::input::InputType::Json => ArgInputType::Json,
+            crate::input::InputType::Json5 => ArgInputType::Json5,
+            crate::input::InputType::Toml => ArgInputType::Toml,
+            crate::input::InputType::Yaml => ArgInputType::Yaml,
+        }
     }
 }
 

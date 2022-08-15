@@ -3,54 +3,59 @@ pub mod json5;
 pub mod toml;
 pub mod yaml;
 
-pub use crate::input::{json::Json, json5::Json5, toml::Toml, yaml::Yaml};
+pub use crate::input::json::Json;
+pub use crate::input::json5::Json5;
+pub use crate::input::toml::Toml;
+pub use crate::input::yaml::Yaml;
+use crate::{
+    cli,
+    output::{Config, OutputWriter, WriterKind},
+};
+use std::{error::Error as StdError, fmt::Display};
+use termcolor::WriteColor;
 
-use either::Either;
-
-pub trait Input {
-    type Context;
+pub trait Input
+where
+    Self::DeserializeError: StdError + Sync + Send + 'static,
+    Self::ParseError: StdError + Sync + Send + 'static,
+    Self::WriteError: StdError + Sync + Send + 'static,
+{
     type Value;
     type DeserializeError;
     type ParseError;
+    type Context;
+    type WriteError;
 
     fn id() -> &'static str;
 
     /// Returns a file extensions
     fn extensions() -> &'static [&'static str];
 
-    /// initialize context
-    fn init_ctx() -> Self::Context;
-
     /// deserialize string to Self::Value
     fn deserialize_str(s: &str) -> Result<Self::Value, Self::DeserializeError>;
 
-    /// deserialized value to gron String
-    fn parse<'a: 'c, 'b, 'c>(
-        ctx: &'a mut Self::Context,
-        v: &'b Self::Value,
-    ) -> Result<&'c str, Self::ParseError>;
+    fn write(
+        writer: &mut dyn WriteColor,
+        s: &str,
+        kind: &WriterKind,
+        config: &Config,
+    ) -> anyhow::Result<()> {
+        let value: Self::Value = Self::deserialize_str(s)?;
+        let mut output_writer = Self::output_writer(kind);
 
-    /// String to gron String
-    fn to_gron(
-        s: impl AsRef<str>,
-    ) -> Result<String, Either<Self::DeserializeError, Self::ParseError>> {
-        let v = Self::deserialize_str(s.as_ref());
+        let mut ctx = output_writer.init_ctx();
 
-        let v = match v {
-            Ok(v) => v,
-            Err(e) => return Err(Either::Left(e)),
-        };
+        output_writer.write_output(writer, &value, &mut ctx, config)?;
 
-        let mut ctx = Self::init_ctx();
-
-        let r = match Self::parse(&mut ctx, &v) {
-            Ok(r) => r,
-            Err(e) => return Err(Either::Right(e)),
-        };
-        Ok(r.to_string())
+        Ok(())
     }
+
+    fn output_writer(
+        kind: &WriterKind,
+    ) -> Box<dyn OutputWriter<Self::Value, Error = Self::WriteError, Context = Self::Context>>;
 }
 
+#[derive(Debug, Copy, Clone)]
 pub enum InputType {
     Json,
     Json5,
@@ -58,25 +63,30 @@ pub enum InputType {
     Yaml,
 }
 
-// #[derive(thiserror::Error, Debug)]
-// pub enum ParseError {
-//     #[error(transparent)]
-//     JsonDeserialize(::serde_json::Error),
-//     #[error(transparent)]
-//     JsonParse(crate::input::json::ParseError),
-//     #[error(transparent)]
-//     Json5Deserialize(::json5::Error),
-//     #[error(transparent)]
-//     Json5Parse(crate::input::json::ParseError),
-//     #[error(transparent)]
-//     TomlDeserialize(::toml::de::Error),
-//     #[error(transparent)]
-//     TomlParseError(crate::input::toml::ParseError),
-//     #[error(transparent)]
-//     YamlDeserialize(::serde_yaml::Error),
-//     #[error(transparent)]
-//     YamlParseError(crate::input::yaml::ParseError),
-// }
+#[derive(Debug)]
+pub struct InputTypeAutoError;
+
+impl Display for InputTypeAutoError {
+    fn fmt(&self, f: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
+        write!(f, "{}", stringify!(InputTypeAutoError))
+    }
+}
+
+impl StdError for InputTypeAutoError {}
+
+impl TryFrom<cli::ArgInputType> for InputType {
+    type Error = InputTypeAutoError;
+
+    fn try_from(value: cli::ArgInputType) -> Result<Self, Self::Error> {
+        match value {
+            cli::ArgInputType::Auto => Err(InputTypeAutoError),
+            cli::ArgInputType::Json => Ok(InputType::Json),
+            cli::ArgInputType::Json5 => Ok(InputType::Json5),
+            cli::ArgInputType::Yaml => Ok(InputType::Yaml),
+            cli::ArgInputType::Toml => Ok(InputType::Toml),
+        }
+    }
+}
 
 impl InputType {
     pub fn guess_by_extension(ext: impl AsRef<str>) -> Option<Self> {
@@ -89,36 +99,18 @@ impl InputType {
         }
     }
 
-    pub fn to_gron(&self, s: &str) -> anyhow::Result<String> {
+    pub fn write(
+        &self,
+        writer: &mut dyn WriteColor,
+        s: &str,
+        kind: &WriterKind,
+        config: &Config,
+    ) -> anyhow::Result<()> {
         match self {
-            InputType::Json => Ok(Json::to_gron(s)?),
-            InputType::Json5 => Ok(Json5::to_gron(s)?),
-            InputType::Toml => Ok(Toml::to_gron(s)?),
-            InputType::Yaml => Ok(Yaml::to_gron(s)?),
+            InputType::Json => Json::write(writer, s, kind, config),
+            InputType::Json5 => Json5::write(writer, s, kind, config),
+            InputType::Toml => Toml::write(writer, s, kind, config),
+            InputType::Yaml => Yaml::write(writer, s, kind, config),
         }
-    }
-
-    pub fn guess_and_to_gron(s: &str) -> Option<String> {
-        // guess json
-        if let Ok(s) = InputType::Json.to_gron(s) {
-            return Some(s);
-        }
-
-        // guess json5
-        if let Ok(s) = InputType::Json5.to_gron(s) {
-            return Some(s);
-        }
-
-        // guess toml
-        if let Ok(s) = InputType::Toml.to_gron(s) {
-            return Some(s);
-        }
-
-        // guess yaml
-        if let Ok(s) = InputType::Yaml.to_gron(s) {
-            return Some(s);
-        }
-
-        None
     }
 }
