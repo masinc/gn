@@ -18,6 +18,6 @@ impl OutputWriter<serde_json::Value> for Original {
         ctx: &mut Self::Context,
         config: &crate::output::Config,
     ) -> Result<(), Self::Error> {
-        output::json::Original.write_output(writer, value, ctx, config)
+        output::json::Original::new().write_output(writer, value, ctx, config)
     }
 }

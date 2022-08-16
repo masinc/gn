@@ -31,7 +31,7 @@ impl Input for Json {
         kind: &WriterKind,
     ) -> Box<dyn OutputWriter<Self::Value, Error = Self::WriteError, Context = Self::Context>> {
         match kind {
-            WriterKind::Original => Box::new(output::json::Original),
+            WriterKind::Original => Box::new(output::json::Original::new()),
             WriterKind::JavaScript => Box::new(output::json::JavaScript),
         }
     }

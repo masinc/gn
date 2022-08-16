@@ -3,8 +3,8 @@ mod org;
 
 pub use js::JavaScript;
 pub use org::Original;
-
 use std::{fmt::Write, io};
+use termcolor::{Color, ColorSpec};
 
 pub type WriteError = io::Error;
 
@@ -57,5 +57,36 @@ impl Context {
         }
 
         s
+    }
+}
+
+#[derive(Debug)]
+pub struct ColorSet {
+    pub ns: ColorSpec,
+    pub bracket: ColorSpec,
+
+    pub number: ColorSpec,
+    pub string: ColorSpec,
+    pub bool: ColorSpec,
+    pub null: ColorSpec,
+}
+
+impl ColorSet {
+    pub fn new() -> Self {
+        Self {
+            ns: ColorSpec::new().set_fg(Some(Color::Blue)).clone(),
+            bracket: ColorSpec::new().set_fg(Some(Color::Magenta)).clone(),
+
+            number: ColorSpec::new().set_fg(Some(Color::Red)).clone(),
+            string: ColorSpec::new().set_fg(Some(Color::Yellow)).clone(),
+            bool: ColorSpec::new().set_fg(Some(Color::Cyan)).clone(),
+            null: ColorSpec::new().set_fg(Some(Color::Cyan)).clone(),
+        }
+    }
+}
+
+impl Default for ColorSet {
+    fn default() -> Self {
+        Self::new()
     }
 }

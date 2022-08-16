@@ -2,7 +2,9 @@ pub mod json;
 pub mod json5;
 pub mod toml;
 pub mod yaml;
-use termcolor::WriteColor;
+
+use std::io;
+use termcolor::{ColorSpec, WriteColor};
 
 #[derive(Debug)]
 pub struct Config {}
@@ -34,3 +36,18 @@ impl Default for WriterKind {
         WriterKind::Original
     }
 }
+
+pub trait WriteColorExt: WriteColor {
+    fn write_color(&mut self, color: &ColorSpec, s: &str) -> io::Result<()> {
+        self.set_color(color)?;
+        write!(self, "{s}")?;
+        self.reset()
+    }
+
+    fn writeln_color(&mut self, color: &ColorSpec, s: &str) -> io::Result<()> {
+        self.write_color(color, s)?;
+        writeln!(self)
+    }
+}
+
+impl WriteColorExt for &mut dyn WriteColor {}
