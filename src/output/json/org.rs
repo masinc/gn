@@ -1,5 +1,5 @@
 use crate::output::{
-    json::{ColorSet, Context, JsonPath},
+    json::{ColorSet, Context, JsonPath, WriteJson, WriteResult},
     OutputWriter, WriteColorExt,
 };
 
@@ -23,8 +23,10 @@ impl Original {
             color_set: Default::default(),
         }
     }
+}
 
-    fn write_path(&self, mut writer: &mut dyn WriteColor, ctx: &Context) -> io::Result<()> {
+impl WriteJson for Original {
+    fn write_path(&self, mut writer: &mut dyn WriteColor, ctx: &Context) -> WriteResult<()> {
         writer.write_color(&self.color_set.ns, &ctx.root)?;
         for p in &ctx.path {
             match p {
@@ -43,7 +45,7 @@ impl Original {
         write!(writer, " = ")
     }
 
-    fn write_null(&self, mut writer: &mut dyn WriteColor, ctx: &Context) -> io::Result<()> {
+    fn write_null(&self, mut writer: &mut dyn WriteColor, ctx: &Context) -> WriteResult<()> {
         self.write_path(writer, ctx)?;
         writer.writeln_color(&self.color_set.null, "null")
     }
@@ -53,7 +55,7 @@ impl Original {
         mut writer: &mut dyn WriteColor,
         ctx: &Context,
         value: &bool,
-    ) -> io::Result<()> {
+    ) -> WriteResult<()> {
         self.write_path(writer, ctx)?;
         writer.writeln_color(&self.color_set.bool, &value.to_string())
     }
@@ -63,7 +65,7 @@ impl Original {
         mut writer: &mut dyn WriteColor,
         ctx: &Context,
         value: &serde_json::Number,
-    ) -> io::Result<()> {
+    ) -> WriteResult<()> {
         self.write_path(writer, ctx)?;
         writer.writeln_color(&self.color_set.number, &value.to_string())
     }
@@ -73,17 +75,17 @@ impl Original {
         mut writer: &mut dyn WriteColor,
         ctx: &Context,
         value: &str,
-    ) -> io::Result<()> {
+    ) -> WriteResult<()> {
         self.write_path(writer, ctx)?;
         writer.writeln_color(&self.color_set.string, &format!("\"{value}\""))
     }
 
-    fn write_array(&self, mut writer: &mut dyn WriteColor, ctx: &Context) -> io::Result<()> {
+    fn write_array(&self, mut writer: &mut dyn WriteColor, ctx: &Context) -> WriteResult<()> {
         self.write_path(writer, ctx)?;
         writer.writeln_color(&self.color_set.bracket, "[]")
     }
 
-    fn write_object(&self, mut writer: &mut dyn WriteColor, ctx: &Context) -> io::Result<()> {
+    fn write_object(&self, mut writer: &mut dyn WriteColor, ctx: &Context) -> WriteResult<()> {
         self.write_path(writer, ctx)?;
         writer.writeln_color(&self.color_set.bracket, "{}")
     }

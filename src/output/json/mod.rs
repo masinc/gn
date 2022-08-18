@@ -4,15 +4,10 @@ mod org;
 pub use js::JavaScript;
 pub use org::Original;
 use std::{fmt::Write, io};
-use termcolor::{Color, ColorSpec};
+use termcolor::{Color, ColorSpec, WriteColor};
 
 pub type WriteError = io::Error;
-
-#[derive(Debug)]
-pub struct Context {
-    root: String,
-    path: Vec<JsonPath>,
-}
+pub type WriteResult<T> = Result<T, WriteError>;
 
 #[derive(Debug, Clone)]
 pub enum JsonPath {
@@ -20,6 +15,12 @@ pub enum JsonPath {
     Array(usize),
     /// object key
     Object(String),
+}
+
+#[derive(Debug)]
+pub struct Context {
+    root: String,
+    path: Vec<JsonPath>,
 }
 
 impl Context {
@@ -58,6 +59,31 @@ impl Context {
 
         s
     }
+}
+
+pub trait WriteJson {
+    fn write_path(&self, writer: &mut dyn WriteColor, ctx: &Context) -> WriteResult<()>;
+    fn write_null(&self, writer: &mut dyn WriteColor, ctx: &Context) -> WriteResult<()>;
+    fn write_bool(
+        &self,
+        writer: &mut dyn WriteColor,
+        ctx: &Context,
+        value: &bool,
+    ) -> WriteResult<()>;
+    fn write_number(
+        &self,
+        writer: &mut dyn WriteColor,
+        ctx: &Context,
+        value: &serde_json::Number,
+    ) -> WriteResult<()>;
+    fn write_string(
+        &self,
+        writer: &mut dyn WriteColor,
+        ctx: &Context,
+        value: &str,
+    ) -> WriteResult<()>;
+    fn write_array(&self, writer: &mut dyn WriteColor, ctx: &Context) -> WriteResult<()>;
+    fn write_object(&self, writer: &mut dyn WriteColor, ctx: &Context) -> WriteResult<()>;
 }
 
 #[derive(Debug)]
