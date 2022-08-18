@@ -131,3 +131,174 @@ impl OutputWriter<serde_json::Value> for Original {
         Ok(())
     }
 }
+
+#[cfg(test)]
+mod tests {
+    use crate::output::Config;
+
+    use super::*;
+
+    fn new_no_color() -> termcolor::NoColor<Vec<u8>> {
+        termcolor::NoColor::new(vec![])
+    }
+
+    #[test]
+    fn original_write_path() -> anyhow::Result<()> {
+        let org = Original::new();
+        let mut ctx = Context::new();
+
+        // json
+        let mut w = new_no_color();
+        org.write_path(&mut w, &ctx)?;
+        assert_eq!("json = ", String::from_utf8(w.into_inner())?);
+
+        // json[0]
+        ctx.path.push(JsonPath::Array(0));
+        let mut w = new_no_color();
+        org.write_path(&mut w, &ctx)?;
+        assert_eq!("json[0] = ", String::from_utf8(w.into_inner())?);
+
+        ctx.path.clear();
+
+        // json.aaa
+        ctx.path.push(JsonPath::Object("aaa".into()));
+        let mut w = new_no_color();
+        org.write_path(&mut w, &ctx)?;
+        assert_eq!("json.aaa = ", String::from_utf8(w.into_inner())?);
+
+        // json.aaa.bbb
+        ctx.path.push(JsonPath::Object("bbb".into()));
+        let mut w = new_no_color();
+        org.write_path(&mut w, &ctx)?;
+        assert_eq!("json.aaa.bbb = ", String::from_utf8(w.into_inner())?);
+
+        // json.aaa.bbb[1]
+        ctx.path.push(JsonPath::Array(1));
+        let mut w = new_no_color();
+        org.write_path(&mut w, &ctx)?;
+        assert_eq!("json.aaa.bbb[1] = ", String::from_utf8(w.into_inner())?);
+
+        Ok(())
+    }
+
+    #[test]
+    fn original_write_null() -> anyhow::Result<()> {
+        let org = Original::new();
+        let ctx = Context::new();
+
+        let mut w = new_no_color();
+        org.write_null(&mut w, &ctx)?;
+        assert_eq!("json = null\n", String::from_utf8(w.into_inner())?);
+
+        Ok(())
+    }
+
+    #[test]
+    fn original_write_bool() -> anyhow::Result<()> {
+        let org = Original::new();
+        let ctx = Context::new();
+
+        let mut w = new_no_color();
+        org.write_bool(&mut w, &ctx, &true)?;
+        assert_eq!("json = true\n", String::from_utf8(w.into_inner())?);
+
+        let mut w = new_no_color();
+        org.write_bool(&mut w, &ctx, &false)?;
+        assert_eq!("json = false\n", String::from_utf8(w.into_inner())?);
+
+        Ok(())
+    }
+
+    #[test]
+    fn original_write_number() -> anyhow::Result<()> {
+        let org = Original::new();
+        let ctx = Context::new();
+
+        let mut w = new_no_color();
+        org.write_number(&mut w, &ctx, &1.into())?;
+        assert_eq!("json = 1\n", String::from_utf8(w.into_inner())?);
+
+        let mut w = new_no_color();
+        org.write_number(&mut w, &ctx, &(-1).into())?;
+        assert_eq!("json = -1\n", String::from_utf8(w.into_inner())?);
+
+        Ok(())
+    }
+
+    #[test]
+    fn original_write_string() -> anyhow::Result<()> {
+        let org = Original::new();
+        let ctx = Context::new();
+
+        let mut w = new_no_color();
+        org.write_string(&mut w, &ctx, "")?;
+        assert_eq!("json = \"\"\n", String::from_utf8(w.into_inner())?);
+
+        let mut w = new_no_color();
+        org.write_string(&mut w, &ctx, "1")?;
+        assert_eq!("json = \"1\"\n", String::from_utf8(w.into_inner())?);
+
+        Ok(())
+    }
+
+    #[test]
+    fn original_write_array() -> anyhow::Result<()> {
+        let org = Original::new();
+        let ctx = Context::new();
+
+        let mut w = new_no_color();
+        org.write_array(&mut w, &ctx)?;
+        assert_eq!("json = []\n", String::from_utf8(w.into_inner())?);
+
+        Ok(())
+    }
+
+    #[test]
+    fn original_write_object() -> anyhow::Result<()> {
+        let org = Original::new();
+        let ctx = Context::new();
+
+        let mut w = new_no_color();
+        org.write_object(&mut w, &ctx)?;
+        assert_eq!("json = {}\n", String::from_utf8(w.into_inner())?);
+
+        Ok(())
+    }
+
+    #[test]
+    fn original_write_output() -> anyhow::Result<()> {
+        let mut org = Original::new();
+
+        let mut w = new_no_color();
+
+        let v = serde_json::json!(
+            {
+                "a": [1, 2, 3],
+                "b": true,
+                "n": 1,
+                "o": {
+                    "b": false
+                },
+                "s": "1",
+            }
+        );
+        org.write_output(&mut w, &v, &mut org.init_ctx(), &Config {})?;
+
+        assert_eq!(
+            r#"json = {}
+json.a = []
+json.a[0] = 1
+json.a[1] = 2
+json.a[2] = 3
+json.b = true
+json.n = 1
+json.o = {}
+json.o.b = false
+json.s = "1"
+"#,
+            String::from_utf8(w.into_inner())?
+        );
+
+        Ok(())
+    }
+}
