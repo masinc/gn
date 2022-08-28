@@ -6,7 +6,7 @@ use std::{
 };
 use url::Url;
 
-#[derive(Debug, Clone, Copy, PartialEq, Eq, clap::ValueEnum)]
+#[derive(Debug, Clone, Copy, PartialEq, Eq, Hash, clap::ValueEnum)]
 pub enum ArgInputType {
     Auto,
     Json,
@@ -32,7 +32,7 @@ impl From<crate::input::InputType> for ArgInputType {
     }
 }
 
-#[derive(Debug, Clone, Copy, PartialEq, Eq, clap::ValueEnum)]
+#[derive(Debug, Clone, Copy, PartialEq, Eq, Hash, clap::ValueEnum)]
 pub enum ArgColor {
     Auto,
     Always,
@@ -45,7 +45,7 @@ impl Default for ArgColor {
     }
 }
 
-#[derive(Debug, Clone, PartialEq, Eq)]
+#[derive(Debug, Clone, PartialEq, Eq, Hash)]
 pub enum Input {
     Stdin,
     Url(Url),
