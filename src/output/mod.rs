@@ -23,6 +23,16 @@ impl From<cli::ArgColor> for Color {
     }
 }
 
+impl From<Color> for serde_gron::FormatType {
+    fn from(val: Color) -> Self {
+        use serde_gron::FormatType;
+        match val {
+            Color::Regular => FormatType::Regular,
+            Color::Colored => FormatType::Color,
+        }
+    }
+}
+
 #[derive(Debug)]
 pub struct Config {
     pub color: Color,

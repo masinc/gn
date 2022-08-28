@@ -34,7 +34,8 @@ impl WriteGron for Json {
         config: &output::Config,
     ) -> Result<(), Self::Error> {
         let v: serde_json::Value = Json::deserialize_str(s)?;
-        serde_gron::to_writer_with(&v, writer, Self::id(), serde_gron::FormatType::Color)?;
+
+        serde_gron::to_writer_with(&v, writer, Self::id(), config.color.into())?;
         Ok(())
     }
 }
