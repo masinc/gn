@@ -2,7 +2,7 @@ use clap::Parser;
 use std::{
     fs,
     io::{self, prelude::*},
-    path::PathBuf,
+    path::{Path, PathBuf},
 };
 use url::Url;
 
@@ -98,4 +98,25 @@ pub struct Cli {
 
     #[clap(value_name = "PATH|URL|STDIN", default_value = "-")]
     pub input: Input,
+}
+
+#[cfg(test)]
+mod tests {
+    use std::str::FromStr;
+
+    use super::*;
+
+    #[test]
+    fn test_input_extension() -> anyhow::Result<()> {
+        assert_eq!(None, Input::Stdin.extension());
+        assert_eq!(
+            Some("html".to_string()),
+            Input::Url(Url::parse("https://example.com/index.html")?).extension()
+        );
+        assert_eq!(
+            Some("json".to_string()),
+            Input::Path(PathBuf::from_str("/data/package.json")?).extension()
+        );
+        Ok(())
+    }
 }
