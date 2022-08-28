@@ -56,7 +56,10 @@ impl Input {
     pub fn extension(&self) -> Option<String> {
         match self {
             Input::Stdin => None,
-            Input::Url(u) => unimplemented!(),
+            Input::Url(url) => Path::new(url.path())
+                .extension()
+                .and_then(|s| s.to_str())
+                .map(String::from),
             Input::Path(p) => p.extension().and_then(|s| s.to_str().map(String::from)),
         }
     }
