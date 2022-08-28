@@ -482,9 +482,9 @@ dependencies = [
 
 [[package]]
 name = "serde-gron"
-version = "0.1.1"
+version = "0.1.2"
 source = "registry+https://github.com/rust-lang/crates.io-index"
-checksum = "053dac00684444c55829aa4b073cc578f20f7f314ebfeadec630832ee026ad48"
+checksum = "b3411ff766a350f7bcabe79a2870a323e58fad6abf8e6723e02e7fb54eee2a8b"
 dependencies = [
  "bool_ext",
  "colored",

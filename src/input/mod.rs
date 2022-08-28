@@ -35,7 +35,7 @@ pub trait WriteGron {
         -> Result<(), Self::Error>;
 }
 
-#[derive(Debug, Copy, Clone)]
+#[derive(Debug, Copy, Clone, PartialEq, Eq, Hash)]
 pub enum InputType {
     Json,
     Json5,
@@ -43,7 +43,7 @@ pub enum InputType {
     Yaml,
 }
 
-#[derive(Debug)]
+#[derive(Debug, PartialEq, Eq, Hash, Clone)]
 pub struct InputTypeAutoError;
 
 impl Display for InputTypeAutoError {
@@ -103,5 +103,28 @@ impl InputType {
         match kind {
             WriterKind::Gron => self.write_gron(writer, s, config),
         }
+    }
+}
+
+#[cfg(test)]
+mod tests {
+    use super::*;
+
+    #[allow(non_snake_case)]
+    #[test]
+    fn test_ArgInputType_to_InputType() {
+        use cli::ArgInputType;
+        assert_eq!(
+            InputType::try_from(ArgInputType::Auto),
+            Err(InputTypeAutoError)
+        );
+
+        assert_eq!(InputType::try_from(ArgInputType::Json), Ok(InputType::Json));
+        assert_eq!(
+            InputType::try_from(ArgInputType::Json5),
+            Ok(InputType::Json5)
+        );
+        assert_eq!(InputType::try_from(ArgInputType::Toml), Ok(InputType::Toml));
+        assert_eq!(InputType::try_from(ArgInputType::Yaml), Ok(InputType::Yaml));
     }
 }

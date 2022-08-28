@@ -1,7 +1,7 @@
 use crate::cli;
 use std::io;
 
-#[derive(Debug, Clone, Copy)]
+#[derive(Debug, Clone, Copy, PartialEq, Eq, Hash)]
 pub enum Color {
     Regular,
     Colored,
@@ -62,5 +62,30 @@ pub enum WriterKind {
 impl Default for WriterKind {
     fn default() -> Self {
         WriterKind::Gron
+    }
+}
+
+#[cfg(test)]
+mod tests {
+    use super::*;
+
+    #[allow(non_snake_case)]
+    #[test]
+    fn test_ArgColor_to_Color() {
+        use cli::ArgColor;
+
+        assert_eq!(Color::from(ArgColor::Always), Color::Colored);
+        assert_eq!(Color::from(ArgColor::Never), Color::Regular);
+        // Maybe colored when tested.
+        assert_eq!(Color::from(ArgColor::Auto), Color::Colored);
+    }
+
+    #[allow(non_snake_case)]
+    #[test]
+    fn test_Color_to_FormatType() {
+        use serde_gron::FormatType;
+
+        assert_eq!(FormatType::Color, FormatType::from(Color::Colored));
+        assert_eq!(FormatType::Regular, FormatType::from(Color::Regular))
     }
 }
