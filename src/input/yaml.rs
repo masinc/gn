@@ -1,7 +1,6 @@
-use crate::input::Input;
+use crate::input::{Input, WriteGron};
 use crate::output;
 use serde_yaml::{Error, Value};
-use std::convert::Infallible;
 
 #[derive(Debug)]
 pub struct Yaml;
@@ -9,9 +8,6 @@ pub struct Yaml;
 impl Input for Yaml {
     type Value = Value;
     type DeserializeError = Error;
-    type ParseError = Infallible;
-    type Context = output::yaml::Context;
-    type WriteError = output::yaml::WriteError;
 
     fn id() -> &'static str {
         "yaml"
@@ -24,14 +20,18 @@ impl Input for Yaml {
     fn deserialize_str(s: &str) -> Result<Self::Value, Self::DeserializeError> {
         serde_yaml::from_str(s)
     }
+}
 
-    fn output_writer(
-        kind: &output::WriterKind,
-    ) -> Box<dyn output::OutputWriter<Self::Value, Error = Self::WriteError, Context = Self::Context>>
-    {
-        match kind {
-            output::WriterKind::Original => Box::new(output::yaml::Original),
-            output::WriterKind::JavaScript => todo!(),
-        }
+impl WriteGron for Yaml {
+    type Error = anyhow::Error;
+
+    fn write_gron(
+        writer: &mut impl std::io::Write,
+        s: &str,
+        config: &output::Config,
+    ) -> Result<(), Self::Error> {
+        let v: serde_yaml::Value = Yaml::deserialize_str(s)?;
+        serde_gron::to_writer_with(&v, writer, Self::id(), serde_gron::FormatType::Color)?;
+        Ok(())
     }
 }

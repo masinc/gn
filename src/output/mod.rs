@@ -1,13 +1,32 @@
-pub mod json;
-pub mod json5;
-pub mod toml;
-pub mod yaml;
-
+use crate::cli;
 use std::io;
-use termcolor::{ColorSpec, WriteColor};
+
+#[derive(Debug, Clone, Copy)]
+pub enum Color {
+    Regular,
+    Colored,
+}
+
+impl From<cli::ArgColor> for Color {
+    fn from(c: cli::ArgColor) -> Self {
+        match c {
+            cli::ArgColor::Auto => {
+                if atty::is(atty::Stream::Stdout) {
+                    Color::Colored
+                } else {
+                    Color::Regular
+                }
+            }
+            cli::ArgColor::Always => Color::Colored,
+            cli::ArgColor::Never => Color::Regular,
+        }
+    }
+}
 
 #[derive(Debug)]
-pub struct Config {}
+pub struct Config {
+    pub color: Color,
+}
 
 pub trait OutputWriter<Value> {
     type Error;
@@ -18,7 +37,7 @@ pub trait OutputWriter<Value> {
 
     fn write_output(
         &mut self,
-        writer: &mut dyn WriteColor,
+        writer: &mut impl io::Write,
         value: &Value,
         ctx: &mut Self::Context,
         config: &Config,
@@ -27,27 +46,11 @@ pub trait OutputWriter<Value> {
 
 #[derive(Debug)]
 pub enum WriterKind {
-    Original,
-    JavaScript,
+    Gron,
 }
 
 impl Default for WriterKind {
     fn default() -> Self {
-        WriterKind::Original
+        WriterKind::Gron
     }
 }
-
-pub trait WriteColorExt: WriteColor {
-    fn write_color(&mut self, color: &ColorSpec, s: &str) -> io::Result<()> {
-        self.set_color(color)?;
-        write!(self, "{s}")?;
-        self.reset()
-    }
-
-    fn writeln_color(&mut self, color: &ColorSpec, s: &str) -> io::Result<()> {
-        self.write_color(color, s)?;
-        writeln!(self)
-    }
-}
-
-impl WriteColorExt for &mut dyn WriteColor {}

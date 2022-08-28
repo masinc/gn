@@ -1,6 +1,6 @@
-use crate::input::Input;
-use crate::output::{self, WriterKind};
-use std::{convert::Infallible, io};
+use crate::input::{Input, WriteGron};
+use crate::output;
+use std::io;
 use toml::{de::Error, Value};
 
 #[derive(Debug)]
@@ -9,9 +9,6 @@ pub struct Toml;
 impl Input for Toml {
     type Value = Value;
     type DeserializeError = Error;
-    type ParseError = Infallible;
-    type Context = output::toml::Context;
-    type WriteError = io::Error;
 
     fn id() -> &'static str {
         "toml"
@@ -24,19 +21,18 @@ impl Input for Toml {
     fn deserialize_str(s: &str) -> Result<Self::Value, Self::DeserializeError> {
         toml::from_str(s)
     }
+}
 
-    fn output_writer(
-        kind: &WriterKind,
-    ) -> Box<
-        dyn crate::output::OutputWriter<
-            Self::Value,
-            Error = Self::WriteError,
-            Context = Self::Context,
-        >,
-    > {
-        match kind {
-            WriterKind::Original => Box::new(output::toml::Original),
-            WriterKind::JavaScript => todo!(),
-        }
+impl WriteGron for Toml {
+    type Error = anyhow::Error;
+
+    fn write_gron(
+        writer: &mut impl io::Write,
+        s: &str,
+        config: &output::Config,
+    ) -> Result<(), Self::Error> {
+        let v: ::toml::Value = Toml::deserialize_str(s)?;
+        serde_gron::to_writer_with(&v, writer, Self::id(), serde_gron::FormatType::Color)?;
+        Ok(())
     }
 }

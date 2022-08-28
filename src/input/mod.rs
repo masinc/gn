@@ -9,22 +9,16 @@ pub use crate::input::toml::Toml;
 pub use crate::input::yaml::Yaml;
 use crate::{
     cli,
-    output::{Config, OutputWriter, WriterKind},
+    output::{Config, WriterKind},
 };
-use std::{error::Error as StdError, fmt::Display};
-use termcolor::WriteColor;
+use std::{error::Error as StdError, fmt::Display, io};
 
 pub trait Input
 where
     Self::DeserializeError: StdError + Sync + Send + 'static,
-    Self::ParseError: StdError + Sync + Send + 'static,
-    Self::WriteError: StdError + Sync + Send + 'static,
 {
     type Value;
     type DeserializeError;
-    type ParseError;
-    type Context;
-    type WriteError;
 
     fn id() -> &'static str;
 
@@ -33,26 +27,12 @@ where
 
     /// deserialize string to Self::Value
     fn deserialize_str(s: &str) -> Result<Self::Value, Self::DeserializeError>;
+}
 
-    fn write(
-        writer: &mut dyn WriteColor,
-        s: &str,
-        kind: &WriterKind,
-        config: &Config,
-    ) -> anyhow::Result<()> {
-        let value: Self::Value = Self::deserialize_str(s)?;
-        let mut output_writer = Self::output_writer(kind);
-
-        let mut ctx = output_writer.init_ctx();
-
-        output_writer.write_output(writer, &value, &mut ctx, config)?;
-
-        Ok(())
-    }
-
-    fn output_writer(
-        kind: &WriterKind,
-    ) -> Box<dyn OutputWriter<Self::Value, Error = Self::WriteError, Context = Self::Context>>;
+pub trait WriteGron {
+    type Error;
+    fn write_gron(writer: &mut impl io::Write, s: &str, config: &Config)
+        -> Result<(), Self::Error>;
 }
 
 #[derive(Debug, Copy, Clone)]
@@ -99,18 +79,29 @@ impl InputType {
         }
     }
 
+    fn write_gron(
+        &self,
+        writer: &mut impl io::Write,
+        s: &str,
+        config: &Config,
+    ) -> anyhow::Result<()> {
+        match self {
+            InputType::Json => Json::write_gron(writer, s, config),
+            InputType::Json5 => Json5::write_gron(writer, s, config),
+            InputType::Toml => Toml::write_gron(writer, s, config),
+            InputType::Yaml => Yaml::write_gron(writer, s, config),
+        }
+    }
+
     pub fn write(
         &self,
-        writer: &mut dyn WriteColor,
+        writer: &mut impl io::Write,
         s: &str,
         kind: &WriterKind,
         config: &Config,
     ) -> anyhow::Result<()> {
-        match self {
-            InputType::Json => Json::write(writer, s, kind, config),
-            InputType::Json5 => Json5::write(writer, s, kind, config),
-            InputType::Toml => Toml::write(writer, s, kind, config),
-            InputType::Yaml => Yaml::write(writer, s, kind, config),
+        match kind {
+            WriterKind::Gron => self.write_gron(writer, s, config),
         }
     }
 }

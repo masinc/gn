@@ -1,9 +1,9 @@
 use crate::{
-    input::Input,
-    output::{self, OutputWriter, WriterKind},
+    input::{Input, WriteGron},
+    output,
 };
 use serde_json::{Error, Value};
-use std::convert::Infallible;
+use std::io;
 
 #[derive(Debug)]
 pub struct Json;
@@ -11,9 +11,6 @@ pub struct Json;
 impl Input for Json {
     type Value = Value;
     type DeserializeError = Error;
-    type ParseError = Infallible;
-    type Context = output::json::Context;
-    type WriteError = output::json::WriteError;
 
     fn id() -> &'static str {
         "json"
@@ -26,13 +23,18 @@ impl Input for Json {
     fn deserialize_str(s: &str) -> Result<Self::Value, Self::DeserializeError> {
         serde_json::from_str(s)
     }
+}
 
-    fn output_writer(
-        kind: &WriterKind,
-    ) -> Box<dyn OutputWriter<Self::Value, Error = Self::WriteError, Context = Self::Context>> {
-        match kind {
-            WriterKind::Original => Box::new(output::json::Original::new()),
-            WriterKind::JavaScript => Box::new(output::json::JavaScript),
-        }
+impl WriteGron for Json {
+    type Error = anyhow::Error;
+
+    fn write_gron(
+        writer: &mut impl io::Write,
+        s: &str,
+        config: &output::Config,
+    ) -> Result<(), Self::Error> {
+        let v: serde_json::Value = Json::deserialize_str(s)?;
+        serde_gron::to_writer_with(&v, writer, Self::id(), serde_gron::FormatType::Color)?;
+        Ok(())
     }
 }

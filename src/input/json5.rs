@@ -1,6 +1,6 @@
 use crate::{
-    input::Input,
-    output::{self, WriterKind},
+    input::{Input, WriteGron},
+    output::{self},
 };
 use serde_json::Value;
 use std::io;
@@ -11,9 +11,6 @@ pub struct Json5;
 impl Input for Json5 {
     type Value = Value;
     type DeserializeError = json5::Error;
-    type ParseError = output::json::WriteError;
-    type Context = output::json::Context;
-    type WriteError = io::Error;
 
     fn id() -> &'static str {
         "json5"
@@ -26,19 +23,18 @@ impl Input for Json5 {
     fn deserialize_str(s: &str) -> Result<Self::Value, Self::DeserializeError> {
         json5::from_str(s)
     }
+}
 
-    fn output_writer(
-        kind: &WriterKind,
-    ) -> Box<
-        dyn crate::output::OutputWriter<
-            Self::Value,
-            Error = Self::WriteError,
-            Context = Self::Context,
-        >,
-    > {
-        match kind {
-            WriterKind::Original => Box::new(output::json5::Original),
-            WriterKind::JavaScript => todo!(),
-        }
+impl WriteGron for Json5 {
+    type Error = anyhow::Error;
+
+    fn write_gron(
+        writer: &mut impl io::Write,
+        s: &str,
+        config: &output::Config,
+    ) -> Result<(), Self::Error> {
+        let v: serde_json::Value = Json5::deserialize_str(s)?;
+        serde_gron::to_writer_with(&v, writer, Self::id(), serde_gron::FormatType::Color)?;
+        Ok(())
     }
 }

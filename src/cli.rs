@@ -45,24 +45,6 @@ impl Default for ArgColor {
     }
 }
 
-impl ArgColor {
-    pub fn color_choice(&self) -> termcolor::ColorChoice {
-        use atty::Stream;
-        use termcolor::ColorChoice;
-        match self {
-            ArgColor::Auto => {
-                if atty::is(Stream::Stdout) {
-                    ColorChoice::Always
-                } else {
-                    ColorChoice::Never
-                }
-            }
-            ArgColor::Always => ColorChoice::Always,
-            ArgColor::Never => ColorChoice::Never,
-        }
-    }
-}
-
 #[derive(Debug, Clone, PartialEq, Eq)]
 pub enum Input {
     Stdin,
