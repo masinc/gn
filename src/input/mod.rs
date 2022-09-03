@@ -127,4 +127,38 @@ mod tests {
         assert_eq!(InputType::try_from(ArgInputType::Toml), Ok(InputType::Toml));
         assert_eq!(InputType::try_from(ArgInputType::Yaml), Ok(InputType::Yaml));
     }
+
+    #[test]
+    fn test_input_guess_by_extension() {
+        assert_eq!(
+            InputType::guess_by_extension("json"),
+            Some(InputType::Json)
+        );
+
+        assert_eq!(
+            InputType::guess_by_extension("json5"),
+            Some(InputType::Json5)
+        );
+
+        assert_eq!(
+            InputType::guess_by_extension("toml"),
+            Some(InputType::Toml)
+        );
+
+        assert_eq!(
+            InputType::guess_by_extension("yml"),
+            Some(InputType::Yaml)
+        );
+
+        assert_eq!(
+            InputType::guess_by_extension("yaml"),
+            Some(InputType::Yaml)
+        );
+
+        assert_eq!(
+            InputType::guess_by_extension("html"),
+            None
+        );
+
+    }
 }
