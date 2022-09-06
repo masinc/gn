@@ -76,8 +76,8 @@ mod tests {
 
         assert_eq!(Color::from(ArgColor::Always), Color::Colored);
         assert_eq!(Color::from(ArgColor::Never), Color::Regular);
-        // Maybe colored when tested.
-        assert_eq!(Color::from(ArgColor::Auto), Color::Colored);
+        // Depends on the situation.
+        // assert_eq!(Color::from(ArgColor::Auto), Color::Colored);
     }
 
     #[allow(non_snake_case)]
